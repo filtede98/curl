@@ -23,6 +23,7 @@
  ***************************************************************************/
 #include "unitcheck.h"
 #include "llist.h"
+#include "slist.h"
 
 static void test_Curl_llist_dtor(void *key, void *value)
 {
@@ -263,6 +264,61 @@ static CURLcode test_unit1300(const char *arg)
 
   Curl_llist_destroy(&llist, NULL);
   Curl_llist_destroy(&llist_destination, NULL);
+
+  /**
+   * testing curl_slist NULL safety and operations
+   */
+  {
+    struct curl_slist *slist = NULL;
+    struct curl_slist *tmp = NULL;
+    struct curl_slist *dup = NULL;
+
+    /* appending NULL string to NULL list returns NULL */
+    fail_unless(!curl_slist_append(NULL, NULL),
+                "appending NULL to NULL list should return NULL");
+
+    /* appending valid string initializes list */
+    slist = curl_slist_append(NULL, "first");
+    abort_unless(slist, "curl_slist_append failed to initialize list");
+
+    /* appending NULL string to existing list returns NULL */
+    tmp = curl_slist_append(slist, NULL);
+    fail_unless(!tmp,
+                "appending NULL string to list should return NULL");
+
+    /* existing list remains intact with original content */
+    fail_unless(!strcmp(slist->data, "first"),
+                "existing list data should remain unchanged");
+    fail_unless(!slist->next,
+                "existing list should have no next element");
+
+    /* second valid string appended */
+    tmp = curl_slist_append(slist, "second");
+    abort_unless(tmp, "appending second element failed");
+    slist = tmp;
+
+    fail_unless(!strcmp(slist->data, "first"),
+                "first node should remain unchanged");
+    abort_unless(slist->next, "second node should exist");
+    fail_unless(!strcmp(slist->next->data, "second"),
+                "second node data mismatch");
+
+    /* duplicating NULL list returns NULL */
+    fail_unless(!Curl_slist_duplicate(NULL),
+                "duplicating NULL list should return NULL");
+
+    /* duplicating valid list creates matching copy */
+    dup = Curl_slist_duplicate(slist);
+    abort_unless(dup, "Curl_slist_duplicate failed");
+    fail_unless(!strcmp(dup->data, "first"),
+                "duplicated first node mismatch");
+    abort_unless(dup->next, "duplicated second node missing");
+    fail_unless(!strcmp(dup->next->data, "second"),
+                "duplicated second node mismatch");
+
+    curl_slist_free_all(dup);
+    curl_slist_free_all(slist);
+  }
 
   UNITTEST_END_SIMPLE
 }

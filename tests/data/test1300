@@ -4,6 +4,7 @@
 <keywords>
 unittest
 llist
+slist
 </keywords>
 </info>
 
@@ -13,7 +14,7 @@ llist
 unittest
 </features>
 <name>
-llist unit tests
+llist and slist unit tests
 </name>
 </client>
 </testcase>
